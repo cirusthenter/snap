@@ -7,4 +7,4 @@ DEPH = $(EXSNAPADV)/localmotifcluster.h
 DEPCPP = $(EXSNAPADV)/localmotifcluster.cpp
 
 # Set the suffix _ if the fortran77 routines are named that way
-CXXFLAGS += -DF77_POST
+CXXFLAGS += -DF77_POST -w
