@@ -62,19 +62,18 @@ int main(int argc, char* argv[])
     cout << "motif discovery time: " << (double)duration_cast<microseconds>(end_motif - start_motif).count() / 1000000 << endl;
 
     int max_cluster_size = 0;
-    for (TUNGraph::TNodeI NI = graph_p.getOriginalGraph()->BegNI(); NI < graph_p.getOriginalGraph()->EndNI(); NI++) {
-        auto start_mappr = high_resolution_clock::now();
-        MAPPR mappr;
-        TInt seed = NI.GetId();
-        mappr.computeAPPR(graph_p, seed, alpha, eps / graph_p.getTotalVolume() * graph_p.getTransformedGraph()->GetNodes());
-        mappr.sweepAPPR(-1);
-        // mappr.printProfile();
-        auto end_mappr = high_resolution_clock::now();
-        int cluster_size = mappr.getCluster().Len();
-        if (cluster_size > max_cluster_size) {
-            max_cluster_size = cluster_size;
-            cout << "seed: " << seed << ", size: " << mappr.getCluster().Len() << ", time: " << (double)duration_cast<microseconds>(end_mappr - start_mappr).count() / 1000000 << endl;
-        }
+    auto start_mappr = high_resolution_clock::now();
+    MAPPR mappr;
+    // TInt seed = graph_p.getOriginalGraph()->BegNI().GetId();
+    TInt seed = 3466;
+    mappr.computeAPPR(graph_p, seed, alpha, eps / graph_p.getTotalVolume() * graph_p.getTransformedGraph()->GetNodes());
+    mappr.sweepAPPR(-1);
+    // mappr.printProfile();
+    auto end_mappr = high_resolution_clock::now();
+    int cluster_size = mappr.getCluster().Len();
+    if (cluster_size > max_cluster_size) {
+        max_cluster_size = cluster_size;
+        cout << "seed: " << seed << ", size: " << mappr.getCluster().Len() << ", time: " << (double)duration_cast<microseconds>(end_mappr - start_mappr).count() / 1000000 << endl;
     }
 
     Catch
