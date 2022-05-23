@@ -3,6 +3,9 @@
 #include <iostream>
 #include <vector>
 
+#include <iostream>
+using namespace std;
+
 // void printVec(const TIntV& vec) {
 //   printf("[");
 //   for (int i = 0; i < vec.Len(); i ++) {
@@ -699,6 +702,7 @@ void MAPPR::computeAPPR(const ProcessedGraph& graph_p, const int SeedNodeId, flo
     NumPushs = 0;
     appr_norm = 0;
     const WeightVH& Weights = graph_p.getWeights();
+    cout << Weights[SeedNodeId].GetDat(SeedNodeId) * eps << endl;
     if (Weights[SeedNodeId].GetDat(SeedNodeId) * eps >= 1) {
         appr_vec(SeedNodeId) = 0;
         return;
@@ -784,6 +788,8 @@ void MAPPR::computeProfile(const ProcessedGraph& graph_p)
     }
     findGlobalMin();
     findFirstlocalMin();
+    cout << "global_min: " << SizeGlobalMin << endl;
+    cout << "first_local_min: " << SizeFirstLocalMin << endl;
 }
 
 // Functions to find the global min and first local min of NCP.
@@ -810,6 +816,7 @@ void MAPPR::findGlobalMin()
 {
     double minCondVal = 2;
     for (int i = 0; i < MtfCondProfile.Len(); i++) {
+        // cout << "MtfCondProfile[" << i << "]: " << MtfCondProfile[i] << endl;
         if (MtfCondProfile[i] < minCondVal) {
             SizeGlobalMin = i + 1;
             minCondVal = MtfCondProfile[i];
