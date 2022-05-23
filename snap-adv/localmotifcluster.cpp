@@ -1,5 +1,7 @@
 #include "localmotifcluster.h"
 #include "stdafx.h"
+#include <iostream>
+#include <vector>
 
 // void printVec(const TIntV& vec) {
 //   printf("[");
@@ -891,4 +893,13 @@ void MAPPR::printProfile()
             printf("\tFirst local minimun!!!\n");
         }
     }
+}
+
+std::vector<int> MAPPR::getNodesInOrder()
+{
+    std::vector<int> nodes;
+    for (int i = 0; i < SizeGlobalMin; ++i) {
+        nodes.push_back(NodeInOrder[i]);
+    }
+    return nodes;
 }
