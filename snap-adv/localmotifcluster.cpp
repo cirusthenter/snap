@@ -810,7 +810,6 @@ bool MAPPR::isLocalMin(int idx, double thresh)
     }
     return false;
 }
-
 void MAPPR::findGlobalMin()
 {
     double minCondVal = 2;
@@ -822,7 +821,6 @@ void MAPPR::findGlobalMin()
         }
     }
 }
-
 void MAPPR::findFirstlocalMin()
 {
     SizeFirstLocalMin = 2;
