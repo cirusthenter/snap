@@ -65,10 +65,10 @@ int main(int argc, char* argv[])
     auto start_mappr = high_resolution_clock::now();
     MAPPR mappr;
     // TInt seed = graph_p.getOriginalGraph()->BegNI().GetId();
-    TInt seed = 3466;
+    TInt seed = 1;
     mappr.computeAPPR(graph_p, seed, alpha, eps / graph_p.getTotalVolume() * graph_p.getTransformedGraph()->GetNodes());
     mappr.sweepAPPR(-1);
-    // mappr.printProfile();
+    mappr.printProfile();
     auto end_mappr = high_resolution_clock::now();
     int cluster_size = mappr.getCluster().Len();
     if (cluster_size > max_cluster_size) {
