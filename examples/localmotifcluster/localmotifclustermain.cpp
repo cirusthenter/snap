@@ -3,10 +3,35 @@
 #include "localmotifcluster.h"
 #include "stdafx.h"
 #include <chrono>
+#include <fstream>
 #include <iostream>
+#include <sstream>
+#include <string>
+#include <unordered_set>
+#include <vector>
 
 using namespace std;
 using namespace std::chrono;
+
+vector<unordered_set<int>> read_community(string path)
+{
+    ifstream file(path);
+    if (!file.good()) {
+        cerr << "file is not good" << endl;
+        exit(0);
+    }
+    vector<unordered_set<int>> communities;
+    string line;
+    while (getline(file, line)) {
+        unordered_set<int> community;
+        istringstream ss(line);
+        int num;
+        while (ss >> num)
+            community.insert(num);
+        communities.push_back(community);
+    }
+    return communities;
+}
 
 int main(int argc, char* argv[])
 {
@@ -55,26 +80,38 @@ int main(int argc, char* argv[])
              << "#edges: " << graph->GetEdges() << endl;
         graph_p = ProcessedGraph(graph, mt);
     }
-    // const TInt seed = Env.GetIfArgPrefixInt("-s:", 1, "Seed");
     const TFlt alpha = Env.GetIfArgPrefixFlt("-a:", 0.98, "alpha");
     const TFlt eps = Env.GetIfArgPrefixFlt("-e:", 0.0001, "eps");
+    // const TInt seed = Env.GetIfArgPrefixInt("-s:", 1, "Seed");
+    // mappr.computeAPPR(graph_p, seed, alpha, eps / graph_p.getTotalVolume() * graph_p.getTransformedGraph()->GetNodes());
+    // mappr.sweepAPPR(-1);
+    // mappr.printProfile();
     auto end_motif = high_resolution_clock::now();
     cout << "motif discovery time: " << (double)duration_cast<microseconds>(end_motif - start_motif).count() / 1000000 << endl;
 
-    int max_cluster_size = 0;
-    for (TUNGraph::TNodeI NI = graph_p.getOriginalGraph()->BegNI(); NI < graph_p.getOriginalGraph()->EndNI(); NI++) {
-        auto start_mappr = high_resolution_clock::now();
-        MAPPR mappr;
-        TInt seed = NI.GetId();
-        mappr.computeAPPR(graph_p, seed, alpha, eps / graph_p.getTotalVolume() * graph_p.getTransformedGraph()->GetNodes());
-        mappr.sweepAPPR(-1);
-        // mappr.printProfile();
-        auto end_mappr = high_resolution_clock::now();
-        int cluster_size = mappr.getCluster().Len();
-        if (cluster_size > max_cluster_size) {
-            max_cluster_size = cluster_size;
-            cout << "seed: " << seed << ", size: " << mappr.getCluster().Len() << ", time: " << (double)duration_cast<microseconds>(end_mappr - start_mappr).count() / 1000000 << endl;
+    vector<unordered_set<int>> communities = read_community("community/karate.cmty.txt");
+    for (auto community : communities) {
+        double max_p = 0, max_r = 0, max_f1 = 0;
+        for (auto seed : community) {
+            MAPPR mappr;
+            mappr.computeAPPR(graph_p, seed, alpha, eps / graph_p.getTotalVolume() * graph_p.getTransformedGraph()->GetNodes());
+            mappr.sweepAPPR(-1);
+            vector<int> expectations = mappr.getNodesInOrder();
+            int hit = 0;
+            for (auto nd : expectations) {
+                if (community.find(nd) != community.end())
+                    ++hit;
+            }
+            double precision = (double)hit / expectations.size();
+            double recall = (double)hit / community.size();
+            double f1 = 2 * precision * recall / (precision + recall);
+            if (f1 > max_f1) {
+                max_p = precision;
+                max_r = recall;
+                max_f1 = f1;
+            }
         }
+        cout << "precision: " << max_p << ", recall: " << max_r << ", f1: " << max_f1 << endl;
     }
 
     Catch
