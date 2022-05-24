@@ -1,13 +1,13 @@
 {
         "files.associations": {
                 "chrono": "cpp",
+                "iostream": "cpp",
                 "__bit_reference": "cpp",
                 "algorithm": "cpp",
                 "bitset": "cpp",
                 "map": "cpp",
                 "set": "cpp",
                 "unordered_map": "cpp",
-                "iostream": "cpp",
                 "__config": "cpp",
                 "__debug": "cpp",
                 "__errc": "cpp",
@@ -85,6 +85,7 @@
                 "memory_resource": "cpp",
                 "netfwd": "cpp",
                 "stop_token": "cpp",
-                "cinttypes": "cpp"
+                "cinttypes": "cpp",
+                "unordered_set": "cpp"
         }
 }

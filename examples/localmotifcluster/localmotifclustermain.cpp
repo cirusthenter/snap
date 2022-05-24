@@ -2,16 +2,33 @@
 //
 #include "localmotifcluster.h"
 #include "stdafx.h"
+#include <algorithm>
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <random>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
 using namespace std;
 using namespace std::chrono;
+
+template <class BidiIter>
+BidiIter random_unique(BidiIter begin, BidiIter end, size_t num_random)
+{
+    size_t left = std::distance(begin, end);
+    while (num_random--) {
+        BidiIter r = begin;
+        std::advance(r, rand() % left);
+        std::swap(*begin, *r);
+        ++begin;
+        --left;
+    }
+    return begin;
+}
 
 vector<unordered_set<int>> read_community(string path)
 {
@@ -41,6 +58,7 @@ int main(int argc, char* argv[])
     Env.PrepArgs(TStr::Fmt("Local motif clustering. build: %s, %s. Time: %s",
         __TIME__, __DATE__, TExeTm::GetCurTm()));
     TExeTm ExeTm;
+
     Try
 
         const bool IsDirected
@@ -89,14 +107,39 @@ int main(int argc, char* argv[])
     auto end_motif = high_resolution_clock::now();
     cout << "motif discovery time: " << (double)duration_cast<microseconds>(end_motif - start_motif).count() / 1000000 << endl;
 
-    vector<unordered_set<int>> communities = read_community("community/karate.cmty.txt");
-    for (auto community : communities) {
+    vector<unordered_set<int>> all_communities = read_community("community/com-orkut.top5000.cmty.txt");
+    auto rng = std::default_random_engine {};
+    std::shuffle(std::begin(all_communities), std::end(all_communities), rng);
+    std::shuffle(std::begin(all_communities), std::end(all_communities), rng);
+    std::shuffle(std::begin(all_communities), std::end(all_communities), rng);
+    vector<unordered_set<int>> communities;
+    int cnt = 0;
+    for (auto c : all_communities) {
+        if (c.size() >= 10 && c.size() <= 200) {
+            communities.push_back(c);
+            cnt++;
+            // if (cnt >= 100)
+            //     break;
+        }
+    }
+    ofstream output("output/com-orkut.top5000.cmty.output.txt");
+    output << "id,precision,recall,f1" << endl;
+    double sum_precision = 0, sum_recall = 0, sum_f1 = 0;
+    unordered_map<int, vector<int>> nd2cluster;
+    for (int i = 0; i < communities.size(); ++i) {
+        auto community = communities[i];
         double max_p = 0, max_r = 0, max_f1 = 0;
         for (auto seed : community) {
-            MAPPR mappr;
-            mappr.computeAPPR(graph_p, seed, alpha, eps / graph_p.getTotalVolume() * graph_p.getTransformedGraph()->GetNodes());
-            mappr.sweepAPPR(-1);
-            vector<int> expectations = mappr.getNodesInOrder();
+            vector<int> expectations;
+            if (nd2cluster.find(seed) != nd2cluster.end())
+                expectations = nd2cluster[seed];
+            else {
+                MAPPR mappr;
+                mappr.computeAPPR(graph_p, seed, alpha, eps / graph_p.getTotalVolume() * graph_p.getTransformedGraph()->GetNodes());
+                mappr.sweepAPPR(-1);
+                expectations = mappr.getNodesInOrder();
+                nd2cluster[seed] = expectations;
+            }
             int hit = 0;
             for (auto nd : expectations) {
                 if (community.find(nd) != community.end())
@@ -111,8 +154,14 @@ int main(int argc, char* argv[])
                 max_f1 = f1;
             }
         }
-        cout << "precision: " << max_p << ", recall: " << max_r << ", f1: " << max_f1 << endl;
+        output << i << "," << max_p << "," << max_r << "," << max_f1 << endl;
+        cout << i << "," << max_p << "," << max_r << "," << max_f1 << endl;
+        sum_precision += max_p;
+        sum_recall += max_r;
+        sum_f1 += max_f1;
     }
+    int len = communities.size();
+    cout << "FINAL precision: " << sum_precision / len << ", recall: " << sum_recall / len << ", f1: " << sum_f1 / len << endl;
 
     Catch
         printf("\nrun time: %s (%s)\n", ExeTm.GetTmStr(),
