@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include <iostream>
 #include <queue>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -761,6 +762,16 @@ void MAPPR::computeProfile(const ProcessedGraph& graph_p)
     TIntSet IsIn; // the current set
     int VolSmall = 1; // =1 if volume(IsIn) <= VolAll/2, and = -1 otherwise;
     float TotalVol = graph_p.getTotalVolume();
+    unordered_map<int, unordered_set<int>> boundary_nodes;
+    unordered_map<int, unordered_set<int>> out_nodes;
+    auto FirstNI = graph_p.getTransformedGraph()->GetNI(Quotient.BegI().GetKey());
+    auto FirstNodeId = FirstNI.GetId();
+    boundary_nodes[FirstNodeId] = unordered_set<int>();
+    for (int j = 0; j < FirstNI.GetOutDeg(); j++) {
+        int NbrId = FirstNI.GetOutNId(j);
+        boundary_nodes[FirstNodeId].insert(NbrId);
+        out_nodes[NbrId].insert(FirstNodeId);
+    }
 
     for (THash<TInt, TFlt>::TIter it = Quotient.BegI(); it < Quotient.EndI(); it++) {
         int NodeId = it->Key;
@@ -774,13 +785,24 @@ void MAPPR::computeProfile(const ProcessedGraph& graph_p)
             vol = TotalVol - vol;
             VolSmall = -1;
         }
-        cut += WeightsHere.GetDat(NodeId);
-        for (long j = 0; j < NI.GetOutDeg(); j++) {
-            long NbrId = NI.GetOutNId(j);
-            if (IsIn.IsKey(NbrId)) {
-                cut -= 2 * WeightsHere.GetDat(NbrId);
+        for (auto nbr : out_nodes[NodeId]) {
+            boundary_nodes[nbr].erase(NodeId);
+            if (boundary_nodes[nbr].size() == 0)
+                boundary_nodes.erase(nbr);
+        }
+        out_nodes.erase(NodeId);
+
+        for (int j = 0; j < NI.GetOutDeg(); j++) {
+            int NbrId = NI.GetOutNId(j);
+            auto NbrNode = graph_p.getTransformedGraph()->GetNI(NbrId);
+            if (!IsIn.IsKey(NbrNode.GetId())) {
+                boundary_nodes[NodeId].insert(NbrId);
+                if (out_nodes.find(NbrId) == out_nodes.end())
+                    out_nodes[NbrId] = unordered_set<int>();
+                out_nodes[NbrId].insert(NodeId);
             }
         }
+        cut = boundary_nodes.size();
         if (vol) {
             MtfCondProfile.Add(cut / vol);
         } else {
