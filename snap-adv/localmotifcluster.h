@@ -173,7 +173,8 @@ public:
     TIntV getCluster() { return Cluster; };
     void printAPPR();
     void printProfile();
-    std::vector<int> getNodesInOrder();
+    std::vector<int> getNodesInOrder(const ProcessedGraph& graph_p, int seed, bool original = true);
+    std::vector<int> singleNodeCut(const ProcessedGraph& graph_p, std::vector<int>& cluster, int seed);
 };
 
 #endif // snap_localmotifcluster_h

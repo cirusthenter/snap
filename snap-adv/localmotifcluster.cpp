@@ -1,9 +1,10 @@
 #include "localmotifcluster.h"
 #include "stdafx.h"
 #include <iostream>
+#include <queue>
+#include <unordered_set>
 #include <vector>
 
-#include <iostream>
 using namespace std;
 
 // void printVec(const TIntV& vec) {
@@ -902,11 +903,61 @@ void MAPPR::printProfile()
     }
 }
 
-std::vector<int> MAPPR::getNodesInOrder()
+std::vector<int> MAPPR::getNodesInOrder(const ProcessedGraph& graph_p, int seed, bool original)
 {
     std::vector<int> nodes;
+
     for (int i = 0; i < SizeGlobalMin; ++i) {
         nodes.push_back(NodeInOrder[i]);
     }
-    return nodes;
+    if (original)
+        return nodes;
+
+    return singleNodeCut(graph_p, nodes, seed);
+}
+
+std::vector<int> MAPPR::singleNodeCut(const ProcessedGraph& graph_p, std::vector<int>& cluster, int seed)
+{
+    TIntV clusterVec;
+    for (auto nd : cluster) {
+        clusterVec.Add(nd);
+    }
+    PUNGraph subGraph = TSnap::GetSubGraph(graph_p.getOriginalGraph(), clusterVec);
+
+    TUNGraph::TNodeI SeedNI = subGraph->GetNI(seed);
+
+    unordered_set<int> inside;
+    queue<int> q;
+    inside.insert(seed);
+    for (int e = 0; e < SeedNI.GetOutDeg(); e++) {
+        int nbrID = SeedNI.GetOutNId(e);
+        inside.insert(nbrID);
+        q.push(nbrID);
+    }
+
+    unordered_set<int> reach;
+    while (!q.empty()) {
+        int nodeId = q.front();
+        q.pop();
+        TUNGraph::TNodeI NI = subGraph->GetNI(nodeId);
+        for (int e = 0; e < NI.GetOutDeg(); e++) {
+            int nbrID = NI.GetOutNId(e);
+            if (inside.find(nbrID) != inside.end())
+                continue;
+            if (reach.find(nbrID) != reach.end()) {
+                reach.erase(nbrID);
+                inside.insert(nbrID);
+                q.push(nbrID);
+                continue;
+            }
+            reach.insert(nbrID);
+        }
+    }
+
+    vector<int> res;
+    for (auto nd : cluster) {
+        if (inside.find(nd) != inside.end())
+            res.push_back(nd);
+    }
+    return res;
 }
