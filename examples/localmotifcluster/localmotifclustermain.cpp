@@ -137,56 +137,64 @@ int main(int argc, char* argv[])
         TSnap::DelSelfEdges(graph);
         graph_p = ProcessedGraph(graph, mt);
     }
-    const TFlt alpha = Env.GetIfArgPrefixFlt("-a:", 0.98, "alpha");
-    const TFlt eps = Env.GetIfArgPrefixFlt("-e:", 0.0001, "eps");
-    // const TInt seed = Env.GetIfArgPrefixInt("-s:", 1, "Seed");
-    // mappr.computeAPPR(graph_p, seed, alpha, eps / graph_p.getTotalVolume() * graph_p.getTransformedGraph()->GetNodes());
-    // mappr.sweepAPPR(-1);
-    // mappr.printProfile();
-    auto end_motif = high_resolution_clock::now();
-    std::cout << "motif discovery time: " << (double)duration_cast<microseconds>(end_motif - start_motif).count() / 1000000 << endl;
-
-    output << "id,precision,recall,f1" << endl;
-    double sum_precision = 0, sum_recall = 0, sum_f1 = 0;
-    unordered_map<int, vector<int>> nd2cluster;
-    for (int i = 0; i < communities.size(); ++i) {
-        auto community = communities[i];
-        double max_p = 0, max_r = 0, max_f1 = 0;
-        int best_seed = -1;
-        for (auto seed : community) {
-            vector<int> expectations;
-            if (nd2cluster.find(seed) != nd2cluster.end())
-                expectations = nd2cluster[seed];
-            else {
-                MAPPR mappr;
-                mappr.computeAPPR(graph_p, seed, alpha, eps / graph_p.getTotalVolume() * graph_p.getTransformedGraph()->GetNodes());
-                mappr.sweepAPPR(-1);
-                expectations = mappr.getNodesInOrder(graph_p, true);
-                nd2cluster[seed] = expectations;
-            }
-            int hit = 0;
-            for (auto nd : expectations) {
-                if (community.find(nd) != community.end())
-                    ++hit;
-            }
-            double precision = (double)hit / expectations.size();
-            double recall = (double)hit / community.size();
-            double f1 = 2 * precision * recall / (precision + recall);
-            if (f1 > max_f1) {
-                max_p = precision;
-                max_r = recall;
-                max_f1 = f1;
-                best_seed = seed;
-            }
-        }
-        output << i << "," << max_p << "," << max_r << "," << max_f1 << endl;
-        std::cout << i << "," << max_p << "," << max_r << "," << max_f1 << endl;
-        sum_precision += max_p;
-        sum_recall += max_r;
-        sum_f1 += max_f1;
+    auto weights = graph_p.getWeights();
+    ofstream f("processed/com-lj.ungraph.txt");
+    for (auto EI = graph_p.getTransformedGraph()->BegEI(); EI < graph_p.getTransformedGraph()->EndEI(); EI++) {
+        int SrcNId = EI.GetSrcNId();
+        int DstNId = EI.GetDstNId();
+        auto w = weights[SrcNId].GetDat(DstNId);
+        f << min(SrcNId, DstNId) << " " << max(SrcNId, DstNId) << " " << w << endl;
     }
-    int len = communities.size();
-    std::cout << "FINAL precision: " << sum_precision / len << ", recall: " << sum_recall / len << ", f1: " << sum_f1 / len << endl;
+    // const TFlt alpha = Env.GetIfArgPrefixFlt("-a:", 0.98, "alpha");
+    // const TFlt eps = Env.GetIfArgPrefixFlt("-e:", 0.0001, "eps");
+    // // const TInt seed = Env.GetIfArgPrefixInt("-s:", 1, "Seed");
+    // // mappr.computeAPPR(graph_p, seed, alpha, eps / graph_p.getTotalVolume() * graph_p.getTransformedGraph()->GetNodes());
+    // // mappr.sweepAPPR(-1);
+    // // mappr.printProfile();
+    // auto end_motif = high_resolution_clock::now();
+    // std::cout << "motif discovery time: " << (double)duration_cast<microseconds>(end_motif - start_motif).count() / 1000000 << endl;
+
+    // output << "id,precision,recall,f1" << endl;
+    // double sum_precision = 0, sum_recall = 0, sum_f1 = 0;
+    // unordered_map<int, vector<int>> nd2cluster;
+    // for (int i = 0; i < communities.size(); ++i) {
+    //     auto community = communities[i];
+    //     double max_p = 0, max_r = 0, max_f1 = 0;
+    //     int best_seed = -1;
+    //     for (auto seed : community) {
+    //         vector<int> expectations;
+    //         if (nd2cluster.find(seed) != nd2cluster.end())
+    //             expectations = nd2cluster[seed];
+    //         else {
+    //             MAPPR mappr;
+    // mappr.computeAPPR(graph_p, seed, alpha, eps / graph_p.getTotalVolume() * graph_p.getTransformedGraph()->GetNodes());
+    //             mappr.sweepAPPR(-1);
+    //             expectations = mappr.getNodesInOrder(graph_p, false);
+    //             nd2cluster[seed] = expectations;
+    //         }
+    //         int hit = 0;
+    //         for (auto nd : expectations) {
+    //             if (community.find(nd) != community.end())
+    //                 ++hit;
+    //         }
+    //         double precision = (double)hit / expectations.size();
+    //         double recall = (double)hit / community.size();
+    //         double f1 = 2 * precision * recall / (precision + recall);
+    //         if (f1 > max_f1) {
+    //             max_p = precision;
+    //             max_r = recall;
+    //             max_f1 = f1;
+    //             best_seed = seed;
+    //         }
+    //     }
+    //     output << i << "," << max_p << "," << max_r << "," << max_f1 << endl;
+    //     std::cout << i << "," << max_p << "," << max_r << "," << max_f1 << endl;
+    //     sum_precision += max_p;
+    //     sum_recall += max_r;
+    //     sum_f1 += max_f1;
+    // }
+    // int len = communities.size();
+    // std::cout << "FINAL precision: " << sum_precision / len << ", recall: " << sum_recall / len << ", f1: " << sum_f1 / len << endl;
 
     Catch
         printf("\nrun time: %s (%s)\n", ExeTm.GetTmStr(),
