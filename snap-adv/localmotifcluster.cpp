@@ -922,7 +922,7 @@ std::vector<int> MAPPR::singleNodeCut(const ProcessedGraph& graph_p, std::vector
     for (auto nd : cluster) {
         clusterVec.Add(nd);
     }
-    PUNGraph subGraph = TSnap::GetSubGraph(graph_p.getOriginalGraph(), clusterVec);
+    PUNGraph subGraph = TSnap::GetSubGraph(graph_p.getTransformedGraph(), clusterVec);
 
     TUNGraph::TNodeI SeedNI = subGraph->GetNI(seed);
 
